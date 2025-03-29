@@ -1,0 +1,12 @@
+#!/bin/sh
+BUILD_DIR=$1
+
+echo ">>> Cleaning up SBT, Heroku and JDK artifacts..."
+
+rm -rf "$BUILD_DIR/.sbt_home"
+rm -rf "$BUILD_DIR/.ivy2"
+rm -rf "$BUILD_DIR/.heroku"
+rm -rf "$BUILD_DIR/.jdk"
+
+echo ">>> Cleanup complete"
+

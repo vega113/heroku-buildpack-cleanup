@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "cleanup-sbt-layer"
+exit 0
+
