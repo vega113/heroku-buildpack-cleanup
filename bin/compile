@@ -23,4 +23,6 @@ rm -rf "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
 # If you have your own truststore, you can remove cacerts, but typically you need it
 # rm -rf "$BUILD_DIR/.jdk/lib/security/cacerts"
 
+rm -rf "$BUILD_DIR/ui/node_modules"
+
 echo ">>> Cleanup complete"
