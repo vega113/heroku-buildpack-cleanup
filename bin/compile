@@ -1,5 +1,9 @@
 echo ">>> Cleaning up SBT, Heroku, and optional JDK artifacts..."
-
+pwd
+echo ">>> BUILD_DIR: $BUILD_DIR"
+echo ">>> before cleanup"
+ls -lah "$BUILD_DIR"
+du -sh "$BUILD_DIR"
 # Remove SBT and Ivy caches
 rm -rf "$BUILD_DIR/.sbt_home"
 rm -rf "$BUILD_DIR/.ivy2"
@@ -24,5 +28,10 @@ rm -rf "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
 # rm -rf "$BUILD_DIR/.jdk/lib/security/cacerts"
 
 rm -rf "$BUILD_DIR/ui/node_modules"
+rm -rf "$BUILD_DIR/target/scala-3.3.4"
+
+echo ">>> after cleanup"
+ls -lah "$BUILD_DIR"
+du -sh "$BUILD_DIR"
 
 echo ">>> Cleanup complete"
