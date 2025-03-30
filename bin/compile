@@ -1,12 +1,42 @@
+<Plan>
+We’ll rewrite the cleanup script to remove large, optional JDK parts (demo, sample, jmods, source) but keep java binaries so “java” remains in slug. The rest of the cleanup remains unchanged.
+</Plan>
+
+<file path="cleanup.sh" action="rewrite">
+  <change>
+    <description>Rewrite cleanup script to remove only unnecessary JDK folders, preserving Java binaries.</description>
+    <content>
+===
 #!/bin/sh
 BUILD_DIR=$1
 
-echo ">>> Cleaning up SBT, Heroku and JDK artifacts..."
+echo ">>> Cleaning up SBT, Heroku, and optional JDK artifacts..."
 
+# Remove SBT and Ivy caches
 rm -rf "$BUILD_DIR/.sbt_home"
 rm -rf "$BUILD_DIR/.ivy2"
+
+# Remove Heroku buildpack cache
 rm -rf "$BUILD_DIR/.heroku"
-rm -rf "$BUILD_DIR/.jdk"
+
+# Remove unneeded JDK subdirectories to reduce size, but keep bin/java
+rm -rf "$BUILD_DIR/.jdk/demo"
+rm -rf "$BUILD_DIR/.jdk/sample"
+rm -rf "$BUILD_DIR/.jdk/include"
+rm -rf "$BUILD_DIR/.jdk/man"
+rm -rf "$BUILD_DIR/.jdk/jmods"
+rm -rf "$BUILD_DIR/.jdk/lib/src.zip"
+rm -rf "$BUILD_DIR/.jdk/lib/ct.sym"
+rm -rf "$BUILD_DIR/.jdk/lib/jrt-fs.jar"
+rm -rf "$BUILD_DIR/.jdk/lib/server/classes.jsa"
+rm -rf "$BUILD_DIR/.jdk/lib/server/classes_nocoops.jsa"
+rm -rf "$BUILD_DIR/.jdk/lib/security/policy"
+rm -rf "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
+# If you have your own truststore, you can remove cacerts, but typically you need it
+# rm -rf "$BUILD_DIR/.jdk/lib/security/cacerts"
 
 echo ">>> Cleanup complete"
-
+===
+    </content>
+  </change>
+</file>
