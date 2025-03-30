@@ -1,15 +1,3 @@
-<Plan>
-We’ll rewrite the cleanup script to remove large, optional JDK parts (demo, sample, jmods, source) but keep java binaries so “java” remains in slug. The rest of the cleanup remains unchanged.
-</Plan>
-
-<file path="cleanup.sh" action="rewrite">
-  <change>
-    <description>Rewrite cleanup script to remove only unnecessary JDK folders, preserving Java binaries.</description>
-    <content>
-===
-#!/bin/sh
-BUILD_DIR=$1
-
 echo ">>> Cleaning up SBT, Heroku, and optional JDK artifacts..."
 
 # Remove SBT and Ivy caches
@@ -36,7 +24,3 @@ rm -rf "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
 # rm -rf "$BUILD_DIR/.jdk/lib/security/cacerts"
 
 echo ">>> Cleanup complete"
-===
-    </content>
-  </change>
-</file>
