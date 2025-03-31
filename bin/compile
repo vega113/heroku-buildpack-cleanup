@@ -1,37 +1,108 @@
-echo ">>> Cleaning up SBT, Heroku, and optional JDK artifacts..."
-pwd
-echo ">>> BUILD_DIR: $BUILD_DIR"
-echo ">>> before cleanup"
-ls -lah "$BUILD_DIR"
-du -sh "$BUILD_DIR"
-# Remove SBT and Ivy caches
-rm -rf "$BUILD_DIR/.sbt_home"
-rm -rf "$BUILD_DIR/.ivy2"
+#!/bin/bash
+# Heroku buildpack cleanup script
+# This buildpack removes unnecessary files to reduce slug size
+# The first argument is the build directory
+# The second argument is the cache directory
+# The third argument is the env directory
 
-# Remove Heroku buildpack cache
-rm -rf "$BUILD_DIR/.heroku"
+set -e # Exit immediately if a command exits with a non-zero status
+
+# Get build directory from arguments or use current directory as fallback
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+
+if [ -z "$BUILD_DIR" ]; then
+  echo "Warning: BUILD_DIR is empty. Using current directory as fallback."
+  BUILD_DIR="."
+fi
+
+# Load configuration from environment if ENV_DIR is provided
+if [ -d "$ENV_DIR" ]; then
+  for e in $(ls -a "$ENV_DIR"); do
+    if [[ "$e" != "." && "$e" != ".." ]]; then
+      export "$e=$(cat $ENV_DIR/$e)"
+    fi
+  done
+fi
+
+# Allow configuring what to clean via environment variables
+CLEAN_SBT=${CLEAN_SBT:-true}
+CLEAN_HEROKU=${CLEAN_HEROKU:-true}
+CLEAN_JDK=${CLEAN_JDK:-true}
+CLEAN_NODE_MODULES=${CLEAN_NODE_MODULES:-true}
+CLEAN_SCALA_TARGET=${CLEAN_SCALA_TARGET:-true}
+SCALA_VERSION=${SCALA_VERSION:-"3.3.4"} # Configurable Scala version
+
+echo ">>> Cleaning up SBT, Heroku, and optional JDK artifacts..."
+echo ">>> BUILD_DIR: $BUILD_DIR"
+
+# Get size before cleanup for comparison
+echo ">>> Space usage before cleanup:"
+BEFORE_SIZE=$(du -sh "$BUILD_DIR" | cut -f1)
+echo "Total size: $BEFORE_SIZE"
+ls -lah "$BUILD_DIR"
+
+# Create a function for safe removal
+safe_remove() {
+  local path="$1"
+  if [ -e "$path" ]; then
+    echo "Removing: $path"
+    rm -rf "$path"
+  fi
+}
+
+# Start cleanup process
+echo ">>> Starting cleanup process..."
+
+# Remove SBT and Ivy caches if enabled
+if [ "$CLEAN_SBT" = "true" ]; then
+  safe_remove "$BUILD_DIR/.sbt_home"
+  safe_remove "$BUILD_DIR/.ivy2"
+fi
+
+# Remove Heroku buildpack cache if enabled
+if [ "$CLEAN_HEROKU" = "true" ]; then
+  safe_remove "$BUILD_DIR/.heroku"
+fi
 
 # Remove unneeded JDK subdirectories to reduce size, but keep bin/java
-rm -rf "$BUILD_DIR/.jdk/demo"
-rm -rf "$BUILD_DIR/.jdk/sample"
-rm -rf "$BUILD_DIR/.jdk/include"
-rm -rf "$BUILD_DIR/.jdk/man"
-rm -rf "$BUILD_DIR/.jdk/jmods"
-rm -rf "$BUILD_DIR/.jdk/lib/src.zip"
-rm -rf "$BUILD_DIR/.jdk/lib/ct.sym"
-rm -rf "$BUILD_DIR/.jdk/lib/jrt-fs.jar"
-rm -rf "$BUILD_DIR/.jdk/lib/server/classes.jsa"
-rm -rf "$BUILD_DIR/.jdk/lib/server/classes_nocoops.jsa"
-rm -rf "$BUILD_DIR/.jdk/lib/security/policy"
-rm -rf "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
-# If you have your own truststore, you can remove cacerts, but typically you need it
-# rm -rf "$BUILD_DIR/.jdk/lib/security/cacerts"
+if [ "$CLEAN_JDK" = "true" ]; then
+  if [ -d "$BUILD_DIR/.jdk" ]; then
+    echo "Cleaning JDK directories..."
+    safe_remove "$BUILD_DIR/.jdk/demo"
+    safe_remove "$BUILD_DIR/.jdk/sample"
+    safe_remove "$BUILD_DIR/.jdk/include"
+    safe_remove "$BUILD_DIR/.jdk/man"
+    safe_remove "$BUILD_DIR/.jdk/jmods"
+    safe_remove "$BUILD_DIR/.jdk/lib/src.zip"
+    safe_remove "$BUILD_DIR/.jdk/lib/ct.sym"
+    safe_remove "$BUILD_DIR/.jdk/lib/jrt-fs.jar"
+    safe_remove "$BUILD_DIR/.jdk/lib/server/classes.jsa"
+    safe_remove "$BUILD_DIR/.jdk/lib/server/classes_nocoops.jsa"
+    safe_remove "$BUILD_DIR/.jdk/lib/security/policy"
+    safe_remove "$BUILD_DIR/.jdk/lib/security/blacklisted.certs"
+    # If you have your own truststore, you can remove cacerts, but typically you need it
+    # safe_remove "$BUILD_DIR/.jdk/lib/security/cacerts"
+  else
+    echo "No JDK directory found to clean."
+  fi
+fi
 
-rm -rf "$BUILD_DIR/ui/node_modules"
-rm -rf "$BUILD_DIR/target/scala-3.3.4"
+# Remove node_modules if enabled
+if [ "$CLEAN_NODE_MODULES" = "true" ]; then
+  safe_remove "$BUILD_DIR/ui/node_modules"
+fi
 
-echo ">>> after cleanup"
+# Remove Scala target directory if enabled
+if [ "$CLEAN_SCALA_TARGET" = "true" ]; then
+  safe_remove "$BUILD_DIR/target/scala-$SCALA_VERSION"
+fi
+
+# Get size after cleanup for comparison
+echo ">>> Space usage after cleanup:"
+AFTER_SIZE=$(du -sh "$BUILD_DIR" | cut -f1)
+echo "Total size: $AFTER_SIZE"
 ls -lah "$BUILD_DIR"
-du -sh "$BUILD_DIR"
 
-echo ">>> Cleanup complete"
+echo ">>> Cleanup complete: Before: $BEFORE_SIZE, After: $AFTER_SIZE"
