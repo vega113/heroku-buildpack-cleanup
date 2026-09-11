@@ -61,9 +61,22 @@ if [ "$CLEAN_SBT" = "true" ]; then
   safe_remove "$BUILD_DIR/.ivy2"
 fi
 
-# Remove Heroku buildpack cache if enabled
+# Remove Heroku buildpack cache if enabled, but keep the JVM metrics agent.
+# tubescribes #4276 / epic #4274: CLEAN_HEROKU=true used to delete all of .heroku,
+# so the official .profile.d/heroku-jvm-metrics.sh hook silently no-oped.
 if [ "$CLEAN_HEROKU" = "true" ]; then
+  metrics_jar="$BUILD_DIR/.heroku/bin/heroku-metrics-agent.jar"
+  metrics_stash=""
+  if [ -f "$metrics_jar" ]; then
+    metrics_stash="$(mktemp)"
+    cp "$metrics_jar" "$metrics_stash"
+  fi
   safe_remove "$BUILD_DIR/.heroku"
+  if [ -n "$metrics_stash" ]; then
+    mkdir -p "$BUILD_DIR/.heroku/bin"
+    mv "$metrics_stash" "$BUILD_DIR/.heroku/bin/heroku-metrics-agent.jar"
+    echo "Preserved .heroku/bin/heroku-metrics-agent.jar for JVM runtime metrics"
+  fi
 fi
 
 # Remove unneeded JDK subdirectories to reduce size, but keep bin/java
